@@ -1,23 +1,46 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
-	"os"
+	"time"
 
-	"github.com/joho/godotenv"
+	"github.com/chromedp/chromedp"
 )
 
 func main() {
-	err := godotenv.Load()
+
+	allocCtx, cancel := chromedp.NewRemoteAllocator(
+		context.Background(),
+		"http://localhost:9222",
+	)
+	defer cancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	var outage bool
+
+	err := chromedp.Run(ctx,
+		chromedp.Navigate("https://downdetector.com/es/problemas/battle-net/"),
+
+		chromedp.Sleep(5*time.Second),
+
+		chromedp.Evaluate(`
+                        (function() {
+                                if (window.PogoConfig && window.PogoConfig.outage !== undefined) {
+                                        return window.PogoConfig.outage;
+                                }
+                                return false;
+                        })()
+                `, &outage),
+	)
+
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal(err)
 	}
 
-	s3Bucket := os.Getenv("S3_BUCKET")
-	fmt.Println(s3Bucket)
+	fmt.Println("Outage......>", outage)
 
-	//POC
-	//BC
-	//"window.PogoConfig = {\"template\":\"status\",\"service\":\"pokerstars\",\"category\":\"Betting, Lotteries & Fantasy Sports\",\"outage\":false};",
 }
