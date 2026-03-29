@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 	"time"
-
+        "fmt"
 	"github.com/chromedp/chromedp"
 )
 
@@ -19,11 +19,12 @@ func CheckServiceStatus() bool {
 		"ITAU":            "https://downdetector.com.br/fora-do-ar/banco-itau/",
 		"NUBANK":          "https://downdetector.com.br/fora-do-ar/nubank/",
 		"MERCADO_PAGO":    "https://downdetector.com.br/fora-do-ar/mercadopago/",
+		"SPARKLIGHT":"https://downdetector.com/es/problemas/sparklight/",
 	}
 
 	var outage bool
 
-	for _, u := range url {
+	for n, u := range url {
 
 		allocCtx, cancel := chromedp.NewRemoteAllocator(
 			context.Background(),
@@ -36,7 +37,7 @@ func CheckServiceStatus() bool {
 
 		err := chromedp.Run(ctx,
 			chromedp.Navigate(u),
-			chromedp.Sleep(4*time.Second),
+			chromedp.Sleep(2*time.Second),
 
 			chromedp.Evaluate(`
 	(function() {
@@ -52,6 +53,7 @@ func CheckServiceStatus() bool {
 			log.Fatal(err)
 		}
 
+		fmt.Printf("service: %s | status: %t\n", n , outage )
 	}
 	return outage
 }

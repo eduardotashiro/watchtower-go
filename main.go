@@ -8,5 +8,6 @@ import (
 
 func main() {
 	app := scraping.CheckServiceStatus()
-	fmt.Printf("services : %t\n", app)
+	fmt.Println(app)	
 }
+
