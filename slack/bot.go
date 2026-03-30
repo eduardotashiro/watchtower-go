@@ -1,28 +1,54 @@
 package slack
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
 	"os"
 
-	"github.com/slack-go/slack"
-	"github.com/slack-go/slack/socketmode"
+	"github.com/joho/godotenv"
 )
 
 // ligando watchtower
-func Bot() *socketmode.Client {
-	sbt := os.Getenv("SBT")
-	sat := os.Getenv("SAT")
+func Bot() {
+	resp, err := http.Get("https://jsonplaceholder.typicode.com/posts")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// fmt.Println(sat, sbt)
-	api := slack.New(
-		sbt,
-		slack.OptionDebug(true),
-	)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	client := socketmode.New(
-		api,
-		socketmode.OptionDebug(true),
-	)
+	sb := string(body)
+	fmt.Printf("%s", sb)
 
-	return client
+}
+
+// Função que envia msg para o slack
+func PostMessageSlack() {
+	err := godotenv.Load()
+	if err!= nil {
+		log.Fatal(err)
+	}
+
+	postBody, _ := json.Marshal(map[string]string{
+		"text": "Hello, World!",
+	})
+	responseBody := bytes.NewBuffer(postBody)
+	resp, err := http.Post(os.Getenv("IW"), "application/json", responseBody)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	sb := string(body)
+	log.Printf("status: %s", sb)
 }

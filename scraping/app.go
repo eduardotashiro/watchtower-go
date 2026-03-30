@@ -2,9 +2,10 @@ package scraping
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
-        "fmt"
+
 	"github.com/chromedp/chromedp"
 )
 
@@ -19,7 +20,7 @@ func CheckServiceStatus() bool {
 		"ITAU":            "https://downdetector.com.br/fora-do-ar/banco-itau/",
 		"NUBANK":          "https://downdetector.com.br/fora-do-ar/nubank/",
 		"MERCADO_PAGO":    "https://downdetector.com.br/fora-do-ar/mercadopago/",
-		"SPARKLIGHT":"https://downdetector.com/es/problemas/sparklight/",
+		"SPARKLIGHT":      "https://downdetector.com/es/problemas/sparklight/",
 	}
 
 	var outage bool
@@ -53,7 +54,7 @@ func CheckServiceStatus() bool {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("service: %s | status: %t\n", n , outage )
+		fmt.Printf("service: %s | status: %t\n", n, outage)
 	}
 	return outage
 }
