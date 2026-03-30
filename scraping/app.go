@@ -1,7 +1,9 @@
 package scraping
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -9,7 +11,7 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-func CheckServiceStatus() bool {
+func CheckServiceStatus() []string{
 
 	url := map[string]string{
 		"BANCO_DO_BRASIL": "https://downdetector.com.br/fora-do-ar/banco-do-brasil/",
@@ -23,9 +25,13 @@ func CheckServiceStatus() bool {
 		"SPARKLIGHT":      "https://downdetector.com/es/problemas/sparklight/",
 	}
 
-	var outage bool
+	var (
+		outage       bool
+		responseBody *bytes.Buffer
+		acumulate    []string
+	)
 
-	for n, u := range url {
+	for name, url := range url {
 
 		allocCtx, cancel := chromedp.NewRemoteAllocator(
 			context.Background(),
@@ -37,7 +43,7 @@ func CheckServiceStatus() bool {
 		defer cancel()
 
 		err := chromedp.Run(ctx,
-			chromedp.Navigate(u),
+			chromedp.Navigate(url),
 			chromedp.Sleep(2*time.Second),
 
 			chromedp.Evaluate(`
@@ -54,7 +60,36 @@ func CheckServiceStatus() bool {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("service: %s | status: %t\n", n, outage)
+		// acumulate = //acumular com append
+
+		data := map[string]map[string]interface{}{
+			"text": {
+				"service": name,
+				"status":  outage,
+			},
+		}
+
+		// for c,v := range data{
+		// 	fmt.Println(c, v)
+		// 	test := append(acumulate,)
+
+		// }
+
+		postBody, err := json.Marshal(data)
+
+		if err != nil {
+			log.Fatalf("erro ao converter p JSON: %v", err)
+		}
+
+		responseBody = bytes.NewBuffer(postBody)
+
+		fmt.Println(responseBody)
 	}
-	return outage
+	return acumulate
 }
+
+// expectativa
+//{"text":"Hello, World!"}
+
+// realidade
+//{"text":{"service":"NUBANK","status":false}}
