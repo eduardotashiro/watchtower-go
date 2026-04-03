@@ -11,7 +11,7 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-func CheckServiceStatus() []string{
+func CheckServiceStatus() bool {
 
 	url := map[string]string{
 		"BANCO_DO_BRASIL": "https://downdetector.com.br/fora-do-ar/banco-do-brasil/",
@@ -25,11 +25,7 @@ func CheckServiceStatus() []string{
 		"SPARKLIGHT":      "https://downdetector.com/es/problemas/sparklight/",
 	}
 
-	var (
-		outage       bool
-		responseBody *bytes.Buffer
-		acumulate    []string
-	)
+	var outage bool
 
 	for name, url := range url {
 
@@ -60,36 +56,7 @@ func CheckServiceStatus() []string{
 			log.Fatal(err)
 		}
 
-		// acumulate = //acumular com append
-
-		data := map[string]map[string]interface{}{
-			"text": {
-				"service": name,
-				"status":  outage,
-			},
-		}
-
-		// for c,v := range data{
-		// 	fmt.Println(c, v)
-		// 	test := append(acumulate,)
-
-		// }
-
-		postBody, err := json.Marshal(data)
-
-		if err != nil {
-			log.Fatalf("erro ao converter p JSON: %v", err)
-		}
-
-		responseBody = bytes.NewBuffer(postBody)
-
-		fmt.Println(responseBody)
+		fmt.Printf("service: %s | status: %t\n", n, outage)
 	}
-	return acumulate
+	return outage
 }
-
-// expectativa
-//{"text":"Hello, World!"}
-
-// realidade
-//{"text":{"service":"NUBANK","status":false}}

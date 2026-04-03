@@ -52,3 +52,4 @@ func PostMessageSlack() {
 	sb := string(body)
 	log.Printf("status: %s", sb)
 }
+
