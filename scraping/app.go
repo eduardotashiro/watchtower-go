@@ -11,7 +11,19 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-func CheckServiceStatus() bool {
+// status
+type ServiceStatus struct {
+	Name   string `json:"name"`
+	Status bool   `json:"status"`
+}
+
+// todos serviços
+type AllServices struct {
+	Services []ServiceStatus `json:"services"`
+	Time     string          `json:"timestamp"`
+}
+
+func CheckServiceStatus() *bytes.Buffer {
 
 	url := map[string]string{
 		"BANCO_DO_BRASIL": "https://downdetector.com.br/fora-do-ar/banco-do-brasil/",
@@ -22,12 +34,11 @@ func CheckServiceStatus() bool {
 		"ITAU":            "https://downdetector.com.br/fora-do-ar/banco-itau/",
 		"NUBANK":          "https://downdetector.com.br/fora-do-ar/nubank/",
 		"MERCADO_PAGO":    "https://downdetector.com.br/fora-do-ar/mercadopago/",
-		"SPARKLIGHT":      "https://downdetector.com/es/problemas/sparklight/",
 	}
 
-	var outage bool
+	var services []ServiceStatus
 
-	for name, url := range url {
+	for name, serviceURL := range url {
 
 		allocCtx, cancel := chromedp.NewRemoteAllocator(
 			context.Background(),
@@ -38,8 +49,10 @@ func CheckServiceStatus() bool {
 		ctx, cancel := chromedp.NewContext(allocCtx)
 		defer cancel()
 
+		var outage bool
+
 		err := chromedp.Run(ctx,
-			chromedp.Navigate(url),
+			chromedp.Navigate(serviceURL),
 			chromedp.Sleep(2*time.Second),
 
 			chromedp.Evaluate(`
@@ -56,7 +69,24 @@ func CheckServiceStatus() bool {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("service: %s | status: %t\n", n, outage)
+		fmt.Printf("service: %s | status: %t\n", name, outage)
+
+		services = append(services, ServiceStatus{
+			Name:   name,
+			Status: outage,
+		})
 	}
-	return outage
+
+	allServices := AllServices{
+		Services: services,
+		Time:     time.Now().Format(time.RFC3339),
+	}
+
+	JsonData, err := json.Marshal(allServices)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return bytes.NewBuffer(JsonData)
+
 }

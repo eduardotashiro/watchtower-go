@@ -1,7 +1,6 @@
 package slack
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -10,23 +9,6 @@ import (
 	"github.com/eduardotashiro/watchtower-go/scraping"
 	"github.com/joho/godotenv"
 )
-
-// ligando watchtower
-func Bot() {
-	resp, err := http.Get("https://jsonplaceholder.typicode.com/posts")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	sb := string(body)
-	fmt.Printf("%s", sb)
-
-}
 
 // Função que envia msg para o slack
 func PostMessageSlack() {
@@ -52,4 +34,3 @@ func PostMessageSlack() {
 	sb := string(body)
 	log.Printf("status: %s", sb)
 }
-

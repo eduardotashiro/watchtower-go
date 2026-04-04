@@ -5,7 +5,5 @@ import (
 )
 
 func main() {
-	// app := scraping.CheckServiceStatus()
-	// slack.Bot()
 	slack.PostMessageSlack()
 }
