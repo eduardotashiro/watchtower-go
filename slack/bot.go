@@ -1,6 +1,9 @@
 package slack
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -12,14 +15,24 @@ import (
 
 // Função que envia msg para o slack
 func PostMessageSlack() {
-	data := scraping.CheckServiceStatus()
+	payload := scraping.CheckServiceStatus()
+	// jsonData := []byte(`{"text":"cacacacarai"}`)
 
-	err := godotenv.Load()
+	// log.Println("Enviando", string(payload))
+
+	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	resp, err := http.Post(os.Getenv("IW"), "application/json", data)
+	fmt.Println("send?", string(jsonData))
+
+	erro := godotenv.Load()
+	if erro != nil {
+		log.Fatal(erro)
+	}
+
+	resp, err := http.Post(os.Getenv("IW"), "application/json", bytes.NewReader(jsonData))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,7 +43,6 @@ func PostMessageSlack() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	sb := string(body)
-	log.Printf("status: %s", sb)
+	fmt.Printf("Status Code: %d\n", resp.StatusCode)
+	fmt.Printf("Response: %s", string(body))
 }

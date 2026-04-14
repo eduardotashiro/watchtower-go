@@ -1,9 +1,7 @@
 package scraping
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -11,19 +9,18 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-// status
+// Notifier
+type SlackPayload struct {
+	Text string `json:"text"`
+}
+
+// Service Status
 type ServiceStatus struct {
 	Name   string `json:"name"`
 	Status bool   `json:"status"`
 }
 
-// todos serviços
-type AllServices struct {
-	Services []ServiceStatus `json:"services"`
-	Time     string          `json:"timestamp"`
-}
-
-func CheckServiceStatus() *bytes.Buffer {
+func CheckServiceStatus() *SlackPayload {
 
 	url := map[string]string{
 		"BANCO_DO_BRASIL": "https://downdetector.com.br/fora-do-ar/banco-do-brasil/",
@@ -38,16 +35,15 @@ func CheckServiceStatus() *bytes.Buffer {
 
 	var services []ServiceStatus
 
+	allocCtx, cancel := chromedp.NewRemoteAllocator(
+		context.Background(),
+		"http://localhost:9222",
+	)
+	defer cancel()
+
 	for name, serviceURL := range url {
 
-		allocCtx, cancel := chromedp.NewRemoteAllocator(
-			context.Background(),
-			"http://localhost:9222",
-		)
-		defer cancel()
-
 		ctx, cancel := chromedp.NewContext(allocCtx)
-		defer cancel()
 
 		var outage bool
 
@@ -64,6 +60,7 @@ func CheckServiceStatus() *bytes.Buffer {
 			})()
 			`, &outage),
 		)
+		cancel()
 
 		if err != nil {
 			log.Fatal(err)
@@ -77,16 +74,21 @@ func CheckServiceStatus() *bytes.Buffer {
 		})
 	}
 
-	allServices := AllServices{
-		Services: services,
-		Time:     time.Now().Format(time.RFC3339),
+	var message string
+
+	for _, service := range services {
+		switch service.Status {
+		case true:
+			message += fmt.Sprintf("%v : %v\n\n", service.Name, service.Status)
+		}
 	}
 
-	JsonData, err := json.Marshal(allServices)
-	if err != nil {
-		log.Fatal(err)
+	payload := &SlackPayload{
+		Text: message,
 	}
 
-	return bytes.NewBuffer(JsonData)
+	return payload
 
 }
+
+//ERR_INSUFFICIENT_RESOURCES
