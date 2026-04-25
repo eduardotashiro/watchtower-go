@@ -3,18 +3,17 @@ package scraping
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/chromedp/chromedp"
 )
 
-// Notifier
+// Notificador
 type SlackPayload struct {
 	Text string `json:"text"`
 }
 
-// Service Status
+// Estado del servicio
 type ServiceStatus struct {
 	Name   string `json:"name"`
 	Status bool   `json:"status"`
@@ -23,14 +22,14 @@ type ServiceStatus struct {
 func CheckServiceStatus() *SlackPayload {
 
 	url := map[string]string{
-		"BANCO_DO_BRASIL": "https://downdetector.com.br/fora-do-ar/banco-do-brasil/",
-		"BRADESCO":        "https://downdetector.com.br/fora-do-ar/bradesco/",
-		"SANTANDER":       "https://downdetector.com.br/fora-do-ar/santander/",
-		"PIX":             "https://downdetector.com.br/fora-do-ar/pix/",
-		"PICPAY":          "https://downdetector.com.br/fora-do-ar/picpay/",
-		"ITAU":            "https://downdetector.com.br/fora-do-ar/banco-itau/",
-		"NUBANK":          "https://downdetector.com.br/fora-do-ar/nubank/",
-		"MERCADO_PAGO":    "https://downdetector.com.br/fora-do-ar/mercadopago/",
+		"Banco do Brasil": "https://downdetector.com.br/fora-do-ar/banco-do-brasil/",
+		"Bradesco":        "https://downdetector.com.br/fora-do-ar/bradesco/",
+		"Santander":       "https://downdetector.com.br/fora-do-ar/santander/",
+		"Pix":             "https://downdetector.com.br/fora-do-ar/pix/",
+		"Pic Pay":         "https://downdetector.com.br/fora-do-ar/picpay/",
+		"Banco Itaú":      "https://downdetector.com.br/fora-do-ar/banco-itau/",
+		"Nubank":          "https://downdetector.com.br/fora-do-ar/nubank/",
+		"Mercado Pago":    "https://downdetector.com.br/fora-do-ar/mercadopago/",
 	}
 
 	var services []ServiceStatus
@@ -63,7 +62,7 @@ func CheckServiceStatus() *SlackPayload {
 		cancel()
 
 		if err != nil {
-			log.Fatal(err)
+			fmt.Printf("error scrapeando, %s:%v\n", name, err)
 		}
 
 		fmt.Printf("service: %s | status: %t\n", name, outage)
@@ -78,8 +77,10 @@ func CheckServiceStatus() *SlackPayload {
 
 	for _, service := range services {
 		switch service.Status {
+		case false:
+			message += fmt.Sprintf("%v : %v | bien\n\n", service.Name, service.Status)
 		case true:
-			message += fmt.Sprintf("%v : %v\n\n", service.Name, service.Status)
+			message += fmt.Sprintf("%v : %v | malo\n\n", service.Name, service.Status)
 		}
 	}
 
@@ -90,5 +91,3 @@ func CheckServiceStatus() *SlackPayload {
 	return payload
 
 }
-
-//ERR_INSUFFICIENT_RESOURCES

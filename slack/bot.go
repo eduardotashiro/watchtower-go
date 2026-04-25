@@ -13,12 +13,9 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Função que envia msg para o slack
+// función que envía un mensaje a Slack
 func PostMessageSlack() {
 	payload := scraping.CheckServiceStatus()
-	// jsonData := []byte(`{"text":"cacacacarai"}`)
-
-	// log.Println("Enviando", string(payload))
 
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
@@ -43,6 +40,12 @@ func PostMessageSlack() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Status Code: %d\n", resp.StatusCode)
-	fmt.Printf("Response: %s", string(body))
+
+	if resp.StatusCode == 200 {
+		fmt.Printf("Status Code: %d\n", resp.StatusCode)
+		fmt.Printf("Response: %s", string(body))
+	} else {
+		fmt.Printf("error en slack, status %v", resp.StatusCode)
+	}
+
 }
