@@ -22,7 +22,6 @@ type ServiceStatus struct {
 }
 
 func CheckServiceStatus() *SlackPayload {
-
 	url := map[string]string{
 		"Banco do Brasil": "https://downdetector.com.br/fora-do-ar/banco-do-brasil/",
 		"Bradesco":        "https://downdetector.com.br/fora-do-ar/bradesco/",
@@ -49,15 +48,14 @@ func CheckServiceStatus() *SlackPayload {
 	defer cancel()
 
 	for name, serviceURL := range url {
-
 		ctx, cancel := chromedp.NewContext(allocCtx)
+		ctx, cancelTimeout := context.WithTimeout(ctx, 10*time.Second)
 
 		var outage bool
 
 		err := chromedp.Run(ctx,
 			chromedp.Navigate(serviceURL),
 			chromedp.Sleep(2*time.Second),
-
 			chromedp.Evaluate(`
 	(function() {
 		if (window.PogoConfig && window.PogoConfig.outage !== undefined) {
@@ -67,6 +65,7 @@ func CheckServiceStatus() *SlackPayload {
 			})()
 			`, &outage),
 		)
+		cancelTimeout()
 		cancel()
 
 		if err != nil {
@@ -97,5 +96,4 @@ func CheckServiceStatus() *SlackPayload {
 	}
 
 	return payload
-
 }
