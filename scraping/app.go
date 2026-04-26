@@ -3,6 +3,8 @@ package scraping
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -34,9 +36,15 @@ func CheckServiceStatus() *SlackPayload {
 
 	var services []ServiceStatus
 
+	chromeURL := os.Getenv("CHROME_URL")
+
+	if chromeURL == "" {
+		log.Fatal("¿donde esta CHROME_URL?")
+	}
+
 	allocCtx, cancel := chromedp.NewRemoteAllocator(
 		context.Background(),
-		"http://localhost:9222",
+		chromeURL,
 	)
 	defer cancel()
 

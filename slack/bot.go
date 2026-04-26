@@ -10,7 +10,6 @@ import (
 	"os"
 
 	"github.com/eduardotashiro/watchtower-go/scraping"
-	"github.com/joho/godotenv"
 )
 
 // función que envía un mensaje a Slack
@@ -24,12 +23,11 @@ func PostMessageSlack() {
 
 	fmt.Println("send?", string(jsonData))
 
-	erro := godotenv.Load()
-	if erro != nil {
-		log.Fatal(erro)
+	incomingWebhook := os.Getenv("IW")
+	if incomingWebhook == "" {
+		log.Fatal("¿donde esta IW?")
 	}
-
-	resp, err := http.Post(os.Getenv("IW"), "application/json", bytes.NewReader(jsonData))
+	resp, err := http.Post(incomingWebhook, "application/json", bytes.NewReader(jsonData))
 	if err != nil {
 		log.Fatal(err)
 	}
