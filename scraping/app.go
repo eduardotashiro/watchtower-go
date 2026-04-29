@@ -1,99 +1,100 @@
 package scraping
 
 import (
-	"context"
 	"fmt"
 	"log"
-	"os"
+	"strings"
 	"time"
 
+	cu "github.com/Davincible/chromedp-undetected"
 	"github.com/chromedp/chromedp"
 )
 
-// Notificador
 type SlackPayload struct {
 	Text string `json:"text"`
 }
 
-// Estado del servicio
 type ServiceStatus struct {
 	Name   string `json:"name"`
-	Status bool   `json:"status"`
+	Status string `json:"status"`
+}
+
+var Services = map[string]string{
+	"Banco do Brasil": "https://downdetector.com.br/fora-do-ar/banco-do-brasil/",
+	"Bradesco":        "https://downdetector.com.br/fora-do-ar/bradesco/",
+	"Santander":       "https://downdetector.com.br/fora-do-ar/santander/",
+	"Pix":             "https://downdetector.com.br/fora-do-ar/pix/",
+	"Pic Pay":         "https://downdetector.com.br/fora-do-ar/picpay/",
+	"Banco Itaú":      "https://downdetector.com.br/fora-do-ar/banco-itau/",
+	"Nubank":          "https://downdetector.com.br/fora-do-ar/nubank/",
+	"Mercado Pago":    "https://downdetector.com.br/fora-do-ar/mercadopago/",
+	"instagram":       "https://downdetector.com.br/fora-do-ar/instagram/",
 }
 
 func CheckServiceStatus() *SlackPayload {
-	url := map[string]string{
-		"Banco do Brasil": "https://downdetector.com.br/fora-do-ar/banco-do-brasil/",
-		"Bradesco":        "https://downdetector.com.br/fora-do-ar/bradesco/",
-		"Santander":       "https://downdetector.com.br/fora-do-ar/santander/",
-		"Pix":             "https://downdetector.com.br/fora-do-ar/pix/",
-		"Pic Pay":         "https://downdetector.com.br/fora-do-ar/picpay/",
-		"Banco Itaú":      "https://downdetector.com.br/fora-do-ar/banco-itau/",
-		"Nubank":          "https://downdetector.com.br/fora-do-ar/nubank/",
-		"Mercado Pago":    "https://downdetector.com.br/fora-do-ar/mercadopago/",
-	}
-
 	var services []ServiceStatus
 
-	chromeURL := os.Getenv("CHROME_URL")
-
-	if chromeURL == "" {
-		log.Fatal("¿donde esta CHROME_URL?")
+	ctx, cancel, err := cu.New(cu.NewConfig(
+		cu.WithTimeout(30 * time.Second),
+	))
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	allocCtx, cancel := chromedp.NewRemoteAllocator(
-		context.Background(),
-		chromeURL,
-	)
 	defer cancel()
 
-	for name, serviceURL := range url {
-		ctx, cancel := chromedp.NewContext(allocCtx)
-		ctx, cancelTimeout := context.WithTimeout(ctx, 10*time.Second)
-
+	for name, serviceURL := range Services {
 		var outage bool
+		var bodyText string
 
 		err := chromedp.Run(ctx,
 			chromedp.Navigate(serviceURL),
-			chromedp.Sleep(2*time.Second),
+			chromedp.Sleep(4*time.Second),
 			chromedp.Evaluate(`
-	(function() {
-		if (window.PogoConfig && window.PogoConfig.outage !== undefined) {
-			return window.PogoConfig.outage;
-			}
-			return false;
-			})()
-			`, &outage),
+(function() {
+	if (window.PogoConfig && window.PogoConfig.outage !== undefined) {
+		return window.PogoConfig.outage;
+	}
+	return false;
+})()
+`, &outage),
+			chromedp.Evaluate(`document.body.innerText.toLowerCase()`, &bodyText),
 		)
-		cancelTimeout()
-		cancel()
+
+		status := "success"
+
+		if outage {
+			status = "danger"
+		} else if strings.Contains(bodyText, "não mostram problemas") {
+			status = "success"
+		} else if strings.Contains(bodyText, "possíveis problemas") {
+			status = "warning"
+		} else if strings.Contains(bodyText, "mostram problemas") {
+			status = "danger"
+		}
 
 		if err != nil {
 			fmt.Printf("error scrapeando, %s:%v\n", name, err)
 		}
 
-		fmt.Printf("service: %s | status: %t\n", name, outage)
+		fmt.Printf("service: %s | status: %s\n", name, status)
 
 		services = append(services, ServiceStatus{
 			Name:   name,
-			Status: outage,
+			Status: status,
 		})
 	}
 
 	var message string
-
 	for _, service := range services {
 		switch service.Status {
-		case false:
-			message += fmt.Sprintf("%v : %v | bien\n\n", service.Name, service.Status)
-		case true:
-			message += fmt.Sprintf("%v : %v | malo\n\n", service.Name, service.Status)
+		case "success":
+			message += fmt.Sprintf("%s : normal\n\n", service.Name)
+		case "warning":
+			message += fmt.Sprintf("%s : instável\n\n", service.Name)
+		case "danger":
+			message += fmt.Sprintf("%s : fora do ar\n\n", service.Name)
 		}
 	}
 
-	payload := &SlackPayload{
-		Text: message,
-	}
-
-	return payload
+	return &SlackPayload{Text: message}
 }
